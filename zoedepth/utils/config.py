@@ -36,7 +36,7 @@ ROOT = pathlib.Path(__file__).parent.parent.resolve()
 HOME_DIR = os.path.expanduser("~")
 
 COMMON_CONFIG = {
-    "save_dir": os.path.expanduser("~/shortcuts/monodepth3_checkpoints"),
+    "save_dir": "/vol/fob-vol3/mi20/deghaisa/code/zoe_checkpoints",
     "project": "ZoeDepth",
     "tags": '',
     "notes": "",
@@ -53,6 +53,8 @@ DATASETS_CONFIG = {
         "max_depth": 80,
         "data_path": os.path.join(HOME_DIR, "shortcuts/datasets/kitti/raw"),
         "gt_path": os.path.join(HOME_DIR, "shortcuts/datasets/kitti/gts"),
+        #"data_path": "/mnt/data/nick/segm/suadd-2023-depth-perception-starter-kit/my_submission/ZoeDepth",
+        #"gt_path": "/mnt/data/nick/segm/suadd-2023-depth-perception-starter-kit/my_submission/ZoeDepth",
         "filenames_file": "./train_test_inputs/kitti_eigen_train_files_with_gt.txt",
         "input_height": 352,
         "input_width": 1216,  # 704
@@ -98,14 +100,18 @@ DATASETS_CONFIG = {
         "avoid_boundary": False,
         "min_depth": 1e-3,   # originally 0.1
         "max_depth": 10,
-        "data_path": os.path.join(HOME_DIR, "shortcuts/datasets/nyu_depth_v2/sync/"),
-        "gt_path": os.path.join(HOME_DIR, "shortcuts/datasets/nyu_depth_v2/sync/"),
-        "filenames_file": "./train_test_inputs/nyudepthv2_train_files_with_gt.txt",
+        #"data_path": os.path.join(HOME_DIR, "shortcuts/datasets/nyu_depth_v2/sync/"),
+        #"gt_path": os.path.join(HOME_DIR, "shortcuts/datasets/nyu_depth_v2/sync/"),
+        "data_path": "/vol/fob-vol3/mi20/deghaisa/code/shot_0003/1_source_sequence",
+        "gt_path": "/vol/fob-vol3/mi20/deghaisa/code/shot_0003/2_gt_depth",
+        "filenames_file": "/vol/fob-vol3/mi20/deghaisa/code/ZoeDepth/train_test_inputs/nyudepthv2_train_files_with_gt.txt",
         "input_height": 480,
         "input_width": 640,
-        "data_path_eval": os.path.join(HOME_DIR, "shortcuts/datasets/nyu_depth_v2/official_splits/test/"),
-        "gt_path_eval": os.path.join(HOME_DIR, "shortcuts/datasets/nyu_depth_v2/official_splits/test/"),
-        "filenames_file_eval": "./train_test_inputs/nyudepthv2_test_files_with_gt.txt",
+        "data_path_eval": "/vol/fob-vol3/mi20/deghaisa/code/shot_0003/1_source_sequence",
+        "gt_path_eval": "/vol/fob-vol3/mi20/deghaisa/code/shot_0003/2_gt_depth",
+        #"data_path_eval": os.path.join(HOME_DIR, "shortcuts/datasets/nyu_depth_v2/official_splits/test/"),
+        #"gt_path_eval": os.path.join(HOME_DIR, "shortcuts/datasets/nyu_depth_v2/official_splits/test/"),
+        "filenames_file_eval": "/vol/fob-vol3/mi20/deghaisa/code/ZoeDepth/train_test_inputs/nyudepthv2_test_files_with_gt.txt",
         "min_depth_eval": 1e-3,
         "max_depth_eval": 10,
         "min_depth_diff": -10,
@@ -236,13 +242,14 @@ ALL_EVAL_DATASETS = ALL_INDOOR + ALL_OUTDOOR
 COMMON_TRAINING_CONFIG = {
     "dataset": "nyu",
     "distributed": True,
-    "workers": 16,
+    "workers": 4,
     "clip_grad": 0.1,
     "use_shared_dict": False,
     "shared_dict": None,
     "use_amp": False,
 
     "aug": True,
+    "do_cutflip": True,
     "random_crop": False,
     "random_translate": False,
     "translate_prob": 0.2,

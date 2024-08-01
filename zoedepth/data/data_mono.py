@@ -27,7 +27,7 @@
 import itertools
 import os
 import random
-
+import copy
 import numpy as np
 import cv2
 import torch
@@ -345,7 +345,7 @@ class DataLoadPreprocess(Dataset):
                 image = self.rotate_image(image, random_angle)
                 depth_gt = self.rotate_image(
                     depth_gt, random_angle, flag=Image.NEAREST)
-
+            
             image = np.asarray(image, dtype=np.float32) / 255.0
             depth_gt = np.asarray(depth_gt, dtype=np.float32)
             depth_gt = np.expand_dims(depth_gt, axis=2)
@@ -354,7 +354,17 @@ class DataLoadPreprocess(Dataset):
                 depth_gt = depth_gt / 1000.0
             else:
                 depth_gt = depth_gt / 256.0
+#####            
+            if self.config.do_cutflip and self.config.aug and np.random.rand() < 0.5:
+                image, depth_gt = self.cutflip(image, depth_gt)
 
+#           
+            if image.ndim == 2:
+                image = np.stack((image,)*3, axis=-1)
+#            image = self.crop(image)
+#            depth_gt = self.crop(depth_gt)
+#            image, depth_gt = self.crop(image, depth_gt)
+            
             if self.config.aug and (self.config.random_crop):
                 image, depth_gt = self.random_crop(
                     image, depth_gt, self.config.input_height, self.config.input_width)
@@ -379,7 +389,10 @@ class DataLoadPreprocess(Dataset):
                 data_path, remove_leading_slash(sample_path.split()[0]))
             image = np.asarray(self.reader.open(image_path),
                                dtype=np.float32) / 255.0
-
+#
+            if image.ndim == 2:
+                image = np.stack((image,)*3, axis=-1)
+                
             if self.mode == 'online_eval':
                 gt_path = self.config.gt_path_eval
                 depth_path = os.path.join(
@@ -438,6 +451,7 @@ class DataLoadPreprocess(Dataset):
         return sample
 
     def rotate_image(self, image, angle, flag=Image.BILINEAR):
+        angle += 5
         result = image.rotate(angle, resample=flag)
         return result
 
@@ -470,13 +484,62 @@ class DataLoadPreprocess(Dataset):
         # print("after", img.shape, depth.shape)
         return img, depth
 
+    def crop(self, img, desired_size=(2150, 1400)):
+        # Compute the crop bounds
+        h, w = img.shape[:2]
+        th, tw = desired_size
+        x1 = int(round((w - tw) / 2))
+        y1 = int(round((h - th) / 2))
+        x2 = x1 + tw
+        y2 = y1 + th
+
+        # Crop the image
+        img_cropped = img[y1:y2, x1:x2,:]
+        return img_cropped
+    
+    def crop(self, img, depth, desired_size=(2150, 1400)):
+        h, w = img.shape[:2]
+        th, tw = desired_size
+        x1 = random.randint(0, w - tw)
+        y1 = random.randint(0, h - th)
+        x2 = x1 + tw
+        y2 = y1 + th
+        
+        img_cropped = img[y1:y2, x1:x2,:]
+        depth_cropped = depth[y1:y2, x1:x2,:]
+        return img_cropped, depth_cropped
+    
+    def cutflip(self, img, depth, p=0.25):
+        if np.random.rand() < p:
+            # horizontal flip
+            half_h = img.shape[0] // 2
+            img_new = copy.copy(img)
+            img[:half_h], img[half_h:] = img_new[half_h:], img_new[:half_h]
+            depth_new = copy.copy(depth)
+            depth[:half_h], depth[half_h:] = depth_new[half_h:], depth_new[:half_h]
+        if np.random.rand() < p:
+            # vertical flip
+            half_w = img.shape[1] // 2
+            img_new = copy.copy(img)
+            img[:, :half_w], img[:, half_w:] = img_new[:, half_w:], img_new[:, :half_w]
+            depth_new = copy.copy(depth)
+            depth[:, :half_w], depth[:, half_w:] = depth_new[:, half_w:], depth_new[:, :half_w]
+        return img, depth
+    
+        
     def train_preprocess(self, image, depth_gt):
+        
         if self.config.aug:
             # Random flipping
             do_flip = random.random()
             if do_flip > 0.5:
                 image = (image[:, ::-1, :]).copy()
                 depth_gt = (depth_gt[:, ::-1, :]).copy()
+
+            do_flip = random.random()
+            if do_flip > 0.5:
+                image = (image[::-1, :, :]).copy()
+                depth_gt = (depth_gt[::-1, :, :]).copy()
 
             # Random gamma, brightness, color augmentation
             do_augment = random.random()
@@ -517,7 +580,7 @@ class ToTensor(object):
             mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]) if do_normalize else nn.Identity()
         self.size = size
         if size is not None:
-            self.resize = transforms.Resize(size=size)
+            self.resize = transforms.Resize(size=size)#, interpolation=tv.transforms.InterpolationMode.BICUBIC)
         else:
             self.resize = nn.Identity()
 
