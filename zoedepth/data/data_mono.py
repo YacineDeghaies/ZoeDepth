@@ -148,7 +148,7 @@ class DepthDataLoader(object):
                                    batch_size=config.batch_size,
                                    shuffle=(self.train_sampler is None),
                                    num_workers=config.workers,
-                                   pin_memory=True,
+                                   pin_memory=False,
                                    persistent_workers=True,
                                 #    prefetch_factor=2,
                                    sampler=self.train_sampler)
